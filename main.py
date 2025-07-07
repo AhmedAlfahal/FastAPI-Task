@@ -4,7 +4,5 @@ app = FastAPI()
 
 @app.get("/")
 def hello_world():
-  '''
-    Hello World Example First Fast API 
-  '''
+  """Hello World Example First FastAPI"""
   return {"Hello": "World"}
