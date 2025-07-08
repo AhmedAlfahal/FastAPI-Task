@@ -40,7 +40,7 @@ async def signup(user: UserRequest, db: Session = Depends(get_db)):
     return JSONResponse(status_code=201, content={"message": "User created successfully"})
   except Exception as e:
     print(e)
-    return JSONResponse(status_code=500, content={"error": "Internal Server Error"})
+    return JSONResponse(status_code=500, content={"error": str(e)})
 
 @app.post("/token")
 async def token(user: UserRequest, db: Session = Depends(get_db)) -> Token:
@@ -53,7 +53,7 @@ async def token(user: UserRequest, db: Session = Depends(get_db)) -> Token:
     access_token = create_access_token(data={"sub": user.username})
     return Token(access_token=access_token, token_type="bearer")
   except Exception as e:
-    return JSONResponse(status_code=500, content={"error": "Internal Server Error"})
+    return JSONResponse(status_code=500, content={"error": str(e)})
   
 @app.post("/tasks")
 async def create_task(task: TaskRequest, request: Request, db: Session = Depends(get_db)) -> TaskResponse:
@@ -76,7 +76,7 @@ async def create_task(task: TaskRequest, request: Request, db: Session = Depends
     return TaskResponse(id=task_id, title=task.title, description=task.description, status=TaskStatus.pending.value)
   except Exception as e:
     print(e)
-    return JSONResponse(status_code=500, content={"error": "Internal Server Error"})    
+    return JSONResponse(status_code=500, content={"error": str(e)})    
 
 @app.get("/tasks")
 async def get_tasks(request: Request, db: Session = Depends(get_db)) -> list[TaskResponse]:
@@ -90,7 +90,7 @@ async def get_tasks(request: Request, db: Session = Depends(get_db)) -> list[Tas
     return [TaskResponse(id=task.id, title=task.title, description=task.description, status=task.status.value) for task in tasks]
   except Exception as e:
     print(e)
-    return JSONResponse(status_code=500, content={"error": "Internal Server Error"})
+    return JSONResponse(status_code=500, content={"error": str(e)})
 
 @app.get("/tasks/{task_id}")
 async def get_task(task_id: int, request: Request, db: Session = Depends(get_db)) -> TaskResponse:
@@ -109,7 +109,7 @@ async def get_task(task_id: int, request: Request, db: Session = Depends(get_db)
     )
   except Exception as e:
     print(e)
-    return JSONResponse(status_code=500, content={"error": "Internal Server Error"})
+    return JSONResponse(status_code=500, content={"error": str(e)})
 
 @app.put("/tasks/{task_id}")
 async def update_task(task_id: int, task: TaskRequest, request: Request, db: Session = Depends(get_db)) -> TaskResponse:
@@ -138,7 +138,7 @@ async def update_task(task_id: int, task: TaskRequest, request: Request, db: Ses
     )
   except Exception as e:
     print(e)
-    return JSONResponse(status_code=500, content={"error": "Internal Server Error"})
+    return JSONResponse(status_code=500, content={"error": str(e)})
 
 @app.delete("/tasks/{task_id}")
 async def delete_task(task_id: int, request: Request, db: Session = Depends(get_db)) -> JSONResponse:
@@ -155,4 +155,4 @@ async def delete_task(task_id: int, request: Request, db: Session = Depends(get_
     return JSONResponse(status_code=200, content={"message": "Task deleted successfully"})
   except Exception as e:
     print(e)
-    return JSONResponse(status_code=500, content={"error": "Internal Server Error"})
+    return JSONResponse(status_code=500, content={"error": str(e)})
