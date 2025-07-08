@@ -47,6 +47,6 @@ async def token(user: UserRequest, db: Session = Depends(get_db)) -> Token:
     if not verify_password(user.password, check_user.password):
         return JSONResponse(status_code=400, content={"error": "Incorrect password"})
     access_token = create_access_token(data={"sub": user.username})
-    return JSONResponse(status_code=200, content={"access_token": access_token, "token_type": "bearer"})
+    return Token(access_token=access_token, token_type="bearer")
   except Exception as e:
     return JSONResponse(status_code=500, content={"error": "Internal Server Error"})
