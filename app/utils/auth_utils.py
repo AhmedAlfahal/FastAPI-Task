@@ -6,7 +6,7 @@ import dotenv
 import jwt
 import os
 import re
-from db import engine, SessionLocal, Base, User, Task, TaskStatus
+from db import User
 from sqlalchemy.orm import Session
 from schemas import UserRequest, Token, TaskRequest
 from sqlalchemy import select, insert
