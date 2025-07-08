@@ -2,3 +2,5 @@ venv/
 .python-version
 __pycache__
 .pytest_cache/
+app/app.db
+.env
