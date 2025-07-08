@@ -1,7 +1,6 @@
 from fastapi.testclient import TestClient
 from main import app
 from schemas import Token
-
 client = TestClient(app)
 
 def test_hello_world():
@@ -67,5 +66,126 @@ def test_token():
     assert response.status_code == 400
     assert response.json() == {"error": "User not found"}
     
+def test_create_task():
+    ## get user token
+    response = client.post("/token", json={"username": "test", "password": "Test@123"})
+    assert response.status_code == 200
+    token_data = response.json()
+    ## create a valid task
+    response = client.post("/tasks", json={"title": "test", "description": "test"}, headers={"Authorization": f"Bearer {token_data['access_token']}", "X-API-Key": "123456"})
+    assert response.status_code == 200
+    assert response.json() == {"id": 1, "title": "test", "description": "test", "status": "pending"}
+    ## create a task with invalid token
+    response = client.post("/tasks", json={"title": "test", "description": "test"}, headers={"Authorization": "Bearer invalid_token", "X-API-Key": "123456"})
+    assert response.status_code == 401
+    assert response.json() == {"error": "Unauthorized"}
+    ## create a task with invalid api key
+    response = client.post("/tasks", json={"title": "test", "description": "test"}, headers={"Authorization": f"Bearer {token_data['access_token']}", "X-API-Key": "invalid_api_key"})
+    assert response.status_code == 401
+    assert response.json() == {"error": "Unauthorized"}
+    ## create a task with invalid authorization header
+    response = client.post("/tasks", json={"title": "test", "description": "test"}, headers={"Authorization": "invalid_authorization", "X-API-Key": "123456"})
+    assert response.status_code == 401
+    assert response.json() == {"error": "Unauthorized"}
+    ## create another user
+    response = client.post("/signup", json={"username": "test2", "password": "Test@123"})
+    assert response.status_code == 201
+    assert response.json() == {"message": "User created successfully"}
+    ## get another user token
+    response = client.post("/token", json={"username": "test2", "password": "Test@123"})
+    assert response.status_code == 200
+    token_data = response.json()
+    ## create a task with another user
+    response = client.post("/tasks", json={"title": "test2", "description": "test2"}, headers={"Authorization": f"Bearer {token_data['access_token']}", "X-API-Key": "123456"})
+    assert response.status_code == 200
+    assert response.json() == {"id": 2, "title": "test2", "description": "test2", "status": "pending"}
+
+
+def test_get_tasks():
+    ## get user token
+    response = client.post("/token", json={"username": "test", "password": "Test@123"})
+    assert response.status_code == 200
+    token_data = response.json()
+    ## get tasks
+    response = client.get("/tasks", headers={"Authorization": f"Bearer {token_data['access_token']}", "X-API-Key": "123456"})
+    assert response.status_code == 200
+    assert response.json() == [{"id": 1, "title": "test", "description": "test", "status": "pending"}]
     
-    
+def test_get_task():
+    ## get user token
+    response = client.post("/token", json={"username": "test", "password": "Test@123"})
+    assert response.status_code == 200
+    token_data = response.json()
+    ## get task
+    response = client.get("/tasks/1", headers={"Authorization": f"Bearer {token_data['access_token']}", "X-API-Key": "123456"})
+    assert response.status_code == 200
+    assert response.json() == {"id": 1, "title": "test", "description": "test", "status": "pending"}
+    ## get task with invalid token
+    response = client.get("/tasks/1", headers={"Authorization": "Bearer invalid_token", "X-API-Key": "123456"})
+    assert response.status_code == 401
+    assert response.json() == {"error": "Unauthorized"}
+    ## get task with invalid api key
+    response = client.get("/tasks/1", headers={"Authorization": f"Bearer {token_data['access_token']}", "X-API-Key": "invalid_api_key"})
+    assert response.status_code == 401
+    assert response.json() == {"error": "Unauthorized"}
+    ## get task with invalid authorization header
+    response = client.get("/tasks/1", headers={"Authorization": "invalid_authorization", "X-API-Key": "123456"})
+    assert response.status_code == 401
+    assert response.json() == {"error": "Unauthorized"}
+    ## get task with invalid task id
+    response = client.get("/tasks/2", headers={"Authorization": f"Bearer {token_data['access_token']}", "X-API-Key": "123456"})
+    assert response.status_code == 404
+    assert response.json() == {"error": "Task not found"}
+
+def test_update_task():
+    ## get user token
+    response = client.post("/token", json={"username": "test", "password": "Test@123"})
+    assert response.status_code == 200
+    token_data = response.json()
+    ## update task with invalid token
+    response = client.put("/tasks/1", json={"title": "test", "description": "test"}, headers={"Authorization": "Bearer invalid_token", "X-API-Key": "123456"})
+    assert response.status_code == 401
+    assert response.json() == {"error": "Unauthorized"}
+    ## update task with invalid api key
+    response = client.put("/tasks/1", json={"title": "test", "description": "test"}, headers={"Authorization": f"Bearer {token_data['access_token']}", "X-API-Key": "invalid_api_key"})
+    assert response.status_code == 401
+    assert response.json() == {"error": "Unauthorized"}
+    ## update task with invalid authorization header
+    response = client.put("/tasks/1", json={"title": "test", "description": "test"}, headers={"Authorization": "invalid_authorization", "X-API-Key": "123456"})
+    assert response.status_code == 401
+    assert response.json() == {"error": "Unauthorized"}
+    ## update task with invalid task id
+    response = client.put("/tasks/2", json={"title": "test", "description": "test"}, headers={"Authorization": f"Bearer {token_data['access_token']}", "X-API-Key": "123456"})
+    assert response.status_code == 404
+    assert response.json() == {"error": "Task not found"}
+    ## update task
+    response = client.put("/tasks/1", json={"title": "test", "description": "test"}, headers={"Authorization": f"Bearer {token_data['access_token']}", "X-API-Key": "123456"})
+    assert response.status_code == 200
+    assert response.json() == {"id": 1, "title": "test", "description": "test", "status": "completed"}
+
+
+def test_delete_task():
+    ## get user token
+    response = client.post("/token", json={"username": "test", "password": "Test@123"})
+    assert response.status_code == 200
+    token_data = response.json()
+    ## delete task with invalid token
+    response = client.delete("/tasks/1", headers={"Authorization": "Bearer invalid_token", "X-API-Key": "123456"})
+    assert response.status_code == 401
+    assert response.json() == {"error": "Unauthorized"}
+    ## delete task with invalid api key
+    response = client.delete("/tasks/1", headers={"Authorization": f"Bearer {token_data['access_token']}", "X-API-Key": "invalid_api_key"})
+    assert response.status_code == 401
+    assert response.json() == {"error": "Unauthorized"}
+    ## delete task with invalid authorization header
+    response = client.delete("/tasks/1", headers={"Authorization": "invalid_authorization", "X-API-Key": "123456"})
+    assert response.status_code == 401
+    assert response.json() == {"error": "Unauthorized"}
+    ## delete task with invalid task id
+    response = client.delete("/tasks/2", headers={"Authorization": f"Bearer {token_data['access_token']}", "X-API-Key": "123456"})
+    assert response.status_code == 404
+    assert response.json() == {"error": "Task not found"}
+    ## delete task
+    response = client.delete("/tasks/1", headers={"Authorization": f"Bearer {token_data['access_token']}", "X-API-Key": "123456"})
+    assert response.status_code == 200
+    assert response.json() == {"message": "Task deleted successfully"}
