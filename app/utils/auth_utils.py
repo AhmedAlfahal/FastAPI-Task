@@ -6,6 +6,11 @@ import dotenv
 import jwt
 import os
 import re
+from db import engine, SessionLocal, Base, User, Task, TaskStatus
+from sqlalchemy.orm import Session
+from schemas import UserRequest, Token, TaskRequest
+from sqlalchemy import select, insert
+from fastapi.responses import JSONResponse
 
 dotenv.load_dotenv()
 
@@ -28,6 +33,13 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
+def validate_token(token: str):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload
+    except InvalidTokenError:
+        return None
+
 def validate_password(password: str):
     if len(password) < 8:
         return "Password must be at least 8 characters long"
@@ -47,3 +59,19 @@ def validate_username(username: str):
     if not re.search(r"[A-Za-z0-9]", username):
         return "Username must contain at least one letter or number"
     return True
+
+def validate_request(request: dict, db: Session):
+    authorization = request.headers.get("Authorization")
+    api_key = request.headers.get("X-API-Key")
+    if authorization is None or api_key is None or authorization.split(" ")[0] != "Bearer":
+        return JSONResponse(status_code=401, content={"error": "Unauthorized"})
+    token = authorization.split(" ")[1]
+    payload = validate_token(token)
+    if payload is None:
+        return JSONResponse(status_code=401, content={"error": "Unauthorized"})
+    if api_key != "123456":
+        return JSONResponse(status_code=401, content={"error": "Unauthorized"})
+    user = db.execute(select(User).where(User.username == payload["sub"])).scalar_one_or_none()
+    if user is None:
+        return JSONResponse(status_code=401, content={"error": "Unauthorized"})
+    return JSONResponse(status_code=200, content={"message": "Authorized", "user_id": user.id})
