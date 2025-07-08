@@ -1,5 +1,4 @@
 from fastapi import FastAPI
-from pydantic import BaseModel
 from auth_utils import validate_password, validate_username, get_password_hash, verify_password, create_access_token
 from fastapi import Depends
 from fastapi.responses import JSONResponse
