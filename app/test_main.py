@@ -1,5 +1,6 @@
 from fastapi.testclient import TestClient
 from main import app
+from schemas import Token
 
 client = TestClient(app)
 
@@ -9,6 +10,11 @@ def test_hello_world():
     assert response.json() == {"Hello": "World"}
 
 def test_signup():
+    ## invalid request parameters
+    response = client.post("/signup", json={"username": "test"})
+    assert response.status_code == 422
+    response = client.post("/signup", json={"password": "Test"})
+    assert response.status_code == 422
     ## Password must be at least 8 characters long
     response = client.post("/signup", json={"username": "test", "password": "Test"})
     assert response.status_code == 400
@@ -45,4 +51,21 @@ def test_signup():
     response = client.post("/signup", json={"username": "test", "password": "Test@123"})
     assert response.status_code == 400
     assert response.json() == {"error": "User already exists"}
+
+def test_token():
+    response = client.post("/token", json={"username": "test", "password": "Test@123"})
+    assert response.status_code == 200
+    token_data = response.json()
+    # Validate it matches the Token model structure
+    token_instance = Token(**token_data)
+    assert token_instance.token_type == "bearer"
+    assert token_instance.access_token is not None
+    response = client.post("/token", json={"username": "test", "password": "Test@1234"})
+    assert response.status_code == 400
+    assert response.json() == {"error": "Incorrect password"}
+    response = client.post("/token", json={"username": "test1", "password": "Test@123"})
+    assert response.status_code == 400
+    assert response.json() == {"error": "User not found"}
+    
+    
     
